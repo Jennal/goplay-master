@@ -5,6 +5,9 @@ import (
 
 	"sort"
 
+	"strings"
+
+	"github.com/jennal/goplay/log"
 	"github.com/jennal/goplay/pkg"
 	"github.com/jennal/goplay/session"
 	"github.com/jennal/goplay/transfer"
@@ -17,6 +20,12 @@ type Services struct {
 	serviceInfos map[int]ServicePack
 }
 
+func NewServices() *Services {
+	return &Services{
+		serviceInfos: make(map[int]ServicePack),
+	}
+}
+
 func (self *Services) OnStarted() {
 }
 
@@ -26,6 +35,17 @@ func (self *Services) OnStopped() {
 func (self *Services) OnNewClient(sess *session.Session) {
 	id := serviceIDGen.NextID()
 	sess.Bind(id)
+	log.Logf("%p => %d", sess, sess.ID)
+}
+
+func (self *Services) fixIP(sess *session.Session, pack *ServicePack) {
+	if pack.IP == "" {
+		pack.IP = sess.RemoteAddr().String()
+		arr := strings.Split(pack.IP, ":")
+		if arr != nil && len(arr) > 1 {
+			pack.IP = arr[0]
+		}
+	}
 }
 
 func (self *Services) Add(sess *session.Session, pack ServicePack) (pkg.Status, *pkg.ErrorMessage) {
@@ -35,7 +55,10 @@ func (self *Services) Add(sess *session.Session, pack ServicePack) (pkg.Status, 
 		delete(self.serviceInfos, sess.ID)
 	})
 
+	self.fixIP(sess, &pack)
+
 	self.mutex.Lock()
+	log.Logf("%p => %d", sess, sess.ID)
 	self.serviceInfos[sess.ID] = pack
 	self.mutex.Unlock()
 
@@ -43,6 +66,8 @@ func (self *Services) Add(sess *session.Session, pack ServicePack) (pkg.Status, 
 }
 
 func (self *Services) Update(sess *session.Session, pack ServicePack) (pkg.Status, *pkg.ErrorMessage) {
+	self.fixIP(sess, &pack)
+
 	self.mutex.Lock()
 	self.serviceInfos[sess.ID] = pack
 	self.mutex.Unlock()
@@ -60,6 +85,10 @@ func (self *Services) GetListByName(sess *session.Session, name string) ([]Servi
 	}
 	self.mutex.Unlock()
 
+	if len(result) == 0 {
+		return nil, pkg.NewErrorMessage(pkg.STAT_ERR_EMPTY_RESULT, "no results")
+	}
+
 	return result, nil
 }
 
@@ -72,6 +101,10 @@ func (self *Services) GetListByTags(sess *session.Session, tags []string) ([]Ser
 		}
 	}
 	self.mutex.Unlock()
+
+	if len(result) == 0 {
+		return nil, pkg.NewErrorMessage(pkg.STAT_ERR_EMPTY_RESULT, "no results")
+	}
 
 	return result, nil
 }

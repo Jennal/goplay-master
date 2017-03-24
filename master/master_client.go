@@ -25,7 +25,7 @@ func (self *MasterClient) Update(pack ServicePack, succCB func(pkg.Status), fail
 }
 
 func (self *MasterClient) GetListByName(name string, succCB func([]ServicePack), failCB func(*pkg.ErrorMessage)) error {
-	return self.Request("master.services.update", name, succCB, failCB)
+	return self.Request("master.services.getlistbyname", name, succCB, failCB)
 }
 
 func (self *MasterClient) GetListByTags(tags []string, succCB func([]ServicePack), failCB func(*pkg.ErrorMessage)) error {
