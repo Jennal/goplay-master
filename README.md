@@ -1,5 +1,5 @@
 # GoPlay-Master
-Master server of GoPlay Framework
+Master server of [GoPlay](https://github.com/Jennal/goplay) Framework
 
 # The MIT License
 
