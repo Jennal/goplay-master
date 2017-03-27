@@ -16,11 +16,11 @@ func NewMasterClient(cli transfer.IClient) *MasterClient {
 	}
 }
 
-func (self *MasterClient) Add(pack ServicePack, succCB func(pkg.Status), failCB func(*pkg.ErrorMessage)) error {
+func (self *MasterClient) Add(pack *ServicePack, succCB func(pkg.Status), failCB func(*pkg.ErrorMessage)) error {
 	return self.Request("master.services.add", pack, succCB, failCB)
 }
 
-func (self *MasterClient) Update(pack ServicePack, succCB func(pkg.Status), failCB func(*pkg.ErrorMessage)) error {
+func (self *MasterClient) Update(pack *ServicePack, succCB func(pkg.Status), failCB func(*pkg.ErrorMessage)) error {
 	return self.Request("master.services.update", pack, succCB, failCB)
 }
 
