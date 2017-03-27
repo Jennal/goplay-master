@@ -13,16 +13,16 @@ import (
 	"github.com/jennal/goplay/transfer"
 )
 
-var serviceIDGen = session.NewIDGen()
+var serviceIDGen = session.IDGen
 
 type Services struct {
 	mutex        sync.Mutex
-	serviceInfos map[int]ServicePack
+	serviceInfos map[uint32]ServicePack
 }
 
 func NewServices() *Services {
 	return &Services{
-		serviceInfos: make(map[int]ServicePack),
+		serviceInfos: make(map[uint32]ServicePack),
 	}
 }
 
