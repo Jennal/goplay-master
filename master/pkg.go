@@ -29,13 +29,14 @@ type ServicePack struct {
 	ClientCount int
 }
 
-func NewServicePack(t ServiceType, name string) ServicePack {
+func NewServicePack(t ServiceType, name string, port int) ServicePack {
 	return ServicePack{
 		TagContainerImpl: data.TagContainerImpl{
 			Tags: make(map[string]bool),
 		},
 		Type:        t,
 		Name:        name,
+		Port:        port,
 		ClientCount: 0,
 	}
 }
