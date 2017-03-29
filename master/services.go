@@ -49,7 +49,7 @@ func (self *Services) fixIP(sess *session.Session, pack *ServicePack) {
 }
 
 func (self *Services) Add(sess *session.Session, pack ServicePack) (pkg.Status, *pkg.ErrorMessage) {
-	sess.On(transfer.EVENT_CLIENT_DISCONNECTED, self, func() {
+	sess.On(transfer.EVENT_CLIENT_DISCONNECTED, self, func(cli transfer.IClient) {
 		self.mutex.Lock()
 		defer self.mutex.Unlock()
 		delete(self.serviceInfos, sess.ID)
