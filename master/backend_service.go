@@ -18,19 +18,45 @@ import (
 	"github.com/jennal/goplay/transfer/tcp"
 )
 
+type IBackendServiceDelegate interface {
+	transfer.IServerDelegate
+
+	OnNewRpcClient(*service.ServiceClient)
+}
+
 type BackendService struct {
 	*service.Service
 	mc *MasterClient
 }
 
 func NewBackendService(name string, serv transfer.IServer) *BackendService {
-	return &BackendService{
+	result := &BackendService{
 		Service: service.NewService(name, serv),
 		mc:      NewMasterClient(tcp.NewClient()),
 	}
+
+	result.RegistFilter(NewBackendFilter(result.Service))
+	return result
+}
+
+func (serv *BackendService) RegistBackendDelegate(delegate IBackendServiceDelegate) {
+	serv.Service.RegistDelegate(delegate)
+	serv.On(ON_NEW_RPC_CLIENT, delegate, delegate.OnNewRpcClient)
+}
+
+func (serv *BackendService) UnregistBackendDelegate(delegate IBackendServiceDelegate) {
+	serv.Service.UnregistDelegate(delegate)
+	serv.Off(ON_NEW_RPC_CLIENT, delegate)
 }
 
 func (self *BackendService) ConnectMaster(host string, port int) error {
 	sp := NewServicePack(ST_BACKEND, self.Name, self.Port())
 	return self.mc.Bind(self, &sp, host, port)
+}
+
+func (self *BackendService) OnNewClient(client transfer.IClient) {
+	serviceClient := self.RegistNewClient(client)
+	// self.HandlerOnNewClient(serviceClient.Session)
+	serviceClient.Emit(transfer.EVENT_CLIENT_CONNECTED, client)
+	self.Emit(ON_NEW_RPC_CLIENT, serviceClient)
 }
