@@ -39,6 +39,12 @@ func (self *BackendFilter) OnRecv(sess *session.Session, header *pkg.Header, bod
 		return true
 	}
 
-	self.service.HandlerOnNewClient(sess)
+	s := session.NewSession(sess.IClient)
+	s.Bind(sess.ID)
+	s.BindClientID(sess.ClientID)
+	s.SetEncoding(sess.Encoding)
+
+	self.service.HandlerOnNewClient(s)
+
 	return false
 }
