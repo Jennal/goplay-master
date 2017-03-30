@@ -5,9 +5,9 @@
 //
 // http://opensource.org/licenses/MIT
 //
-// Unless required by applicable law or agreed to in writing, software distributed 
-// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR 
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the 
+// Unless required by applicable law or agreed to in writing, software distributed
+// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
 package master
@@ -16,6 +16,7 @@ import (
 	"sync"
 
 	"github.com/jennal/goplay/aop"
+	"github.com/jennal/goplay/event"
 	"github.com/jennal/goplay/log"
 	"github.com/jennal/goplay/pkg"
 	"github.com/jennal/goplay/service"
@@ -24,6 +25,7 @@ import (
 
 type MasterClient struct {
 	*service.ServiceClient
+	event.IEvent
 	server transfer.IServer
 
 	data        *ServicePack
@@ -34,6 +36,7 @@ type MasterClient struct {
 func NewMasterClient(cli transfer.IClient) *MasterClient {
 	return &MasterClient{
 		ServiceClient: service.NewServiceClient(cli),
+		IEvent:        event.NewEvent(),
 		data:          nil,
 		isDataDirty:   false,
 	}
@@ -80,6 +83,14 @@ func (self *MasterClient) Bind(serv transfer.IServer, sp *ServicePack, host stri
 		defer self.dataMutex.Unlock()
 		self.data.ClientCount++
 		self.isDataDirty = true
+	})
+
+	self.AddListener(ON_CONNECTOR_UPDATED, func(sp ServicePack) {
+		self.Emit(ON_CONNECTOR_UPDATED, sp)
+	})
+
+	self.AddListener(ON_BACKEND_UPDATED, func(sp ServicePack) {
+		self.Emit(ON_BACKEND_UPDATED, sp)
 	})
 
 	err := self.Connect(host, port)
@@ -221,4 +232,56 @@ func (self *MasterClient) GetByTags(tags []string) (result ServicePack, err *pkg
 	})
 
 	return
+}
+
+func (self *MasterClient) GetListByType(t ServiceType) (result []ServicePack, err *pkg.ErrorMessage) {
+	aop.Parallel(func(c chan bool) {
+		e := self.Request("master.services.getlistbytype", t, func(s []ServicePack) {
+			result = s
+			err = nil
+			c <- true
+		}, func(e *pkg.ErrorMessage) {
+			result = nil
+			err = e
+			c <- true
+		})
+
+		if e != nil {
+			result = nil
+			err = pkg.NewErrorMessage(pkg.STAT_ERR, e.Error())
+			c <- true
+		}
+	})
+
+	return
+}
+
+func (self *MasterClient) GetUniqueListByType(t ServiceType) (result []ServicePack, err *pkg.ErrorMessage) {
+	aop.Parallel(func(c chan bool) {
+		e := self.Request("master.services.getuniquelistbytype", t, func(s []ServicePack) {
+			result = s
+			err = nil
+			c <- true
+		}, func(e *pkg.ErrorMessage) {
+			result = nil
+			err = e
+			c <- true
+		})
+
+		if e != nil {
+			result = nil
+			err = pkg.NewErrorMessage(pkg.STAT_ERR, e.Error())
+			c <- true
+		}
+	})
+
+	return
+}
+
+func (self *MasterClient) GetConnectors() (result []ServicePack, err *pkg.ErrorMessage) {
+	return self.GetListByType(ST_CONNECTOR)
+}
+
+func (self *MasterClient) GetBackends() (result []ServicePack, err *pkg.ErrorMessage) {
+	return self.GetUniqueListByType(ST_BACKEND)
 }

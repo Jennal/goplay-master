@@ -5,9 +5,9 @@
 //
 // http://opensource.org/licenses/MIT
 //
-// Unless required by applicable law or agreed to in writing, software distributed 
-// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR 
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the 
+// Unless required by applicable law or agreed to in writing, software distributed
+// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
 package master
@@ -28,13 +28,15 @@ import (
 var serviceIDGen = session.IDGen
 
 type Services struct {
-	mutex        sync.Mutex
-	serviceInfos map[uint32]ServicePack
+	mutex          sync.Mutex
+	serviceInfos   map[uint32]ServicePack
+	sessionManager *session.SessionManager
 }
 
 func NewServices() *Services {
 	return &Services{
-		serviceInfos: make(map[uint32]ServicePack),
+		serviceInfos:   make(map[uint32]ServicePack),
+		sessionManager: session.NewSessionManager(),
 	}
 }
 
@@ -48,6 +50,7 @@ func (self *Services) OnNewClient(sess *session.Session) {
 	id := serviceIDGen.NextID()
 	sess.Bind(id)
 	log.Logf("%p => %d", sess, sess.ID)
+	self.sessionManager.Add(sess)
 }
 
 func (self *Services) fixIP(sess *session.Session, pack *ServicePack) {
@@ -56,6 +59,26 @@ func (self *Services) fixIP(sess *session.Session, pack *ServicePack) {
 		arr := strings.Split(pack.IP, ":")
 		if arr != nil && len(arr) > 1 {
 			pack.IP = arr[0]
+		}
+	}
+}
+
+func (self *Services) onServicePackUpdated(sp ServicePack) {
+	if !sp.Type.IsBackend() && !sp.Type.Is(ST_CONNECTOR) {
+		return
+	}
+
+	for _, sess := range self.sessionManager.Sessions() {
+		sessSp, ok := self.serviceInfos[sess.ID]
+		if !ok {
+			log.Errorf("can't happen!!")
+			continue
+		}
+
+		if sp.Type.IsBackend() && sessSp.Type.Is(ST_CONNECTOR) {
+			sess.Push(ON_BACKEND_UPDATED, sp)
+		} else if sp.Type.Is(ST_CONNECTOR) && sessSp.Type.IsBackend() {
+			sess.Push(ON_CONNECTOR_UPDATED, sp)
 		}
 	}
 }
@@ -70,9 +93,11 @@ func (self *Services) Add(sess *session.Session, pack ServicePack) (pkg.Status, 
 	self.fixIP(sess, &pack)
 
 	self.mutex.Lock()
-	log.Logf("%p => %d", sess, sess.ID)
+	log.Logf("%p => %d | %v", sess, sess.ID, pack)
 	self.serviceInfos[sess.ID] = pack
 	self.mutex.Unlock()
+
+	self.onServicePackUpdated(pack)
 
 	return pkg.STAT_OK, nil
 }
@@ -83,6 +108,8 @@ func (self *Services) Update(sess *session.Session, pack ServicePack) (pkg.Statu
 	self.mutex.Lock()
 	self.serviceInfos[sess.ID] = pack
 	self.mutex.Unlock()
+
+	self.onServicePackUpdated(pack)
 
 	return pkg.STAT_OK, nil
 }
@@ -145,4 +172,51 @@ func (self *Services) GetByTags(sess *session.Session, tags []string) (ServicePa
 	})
 
 	return result[0], nil
+}
+
+func (self *Services) GetListByType(sess *session.Session, t ServiceType) ([]ServicePack, *pkg.ErrorMessage) {
+	result := []ServicePack{}
+	self.mutex.Lock()
+	for _, sp := range self.serviceInfos {
+		if sp.Type&t == t {
+			result = append(result, sp)
+		}
+	}
+	self.mutex.Unlock()
+
+	if len(result) == 0 {
+		return nil, pkg.NewErrorMessage(pkg.STAT_ERR_EMPTY_RESULT, "no results")
+	}
+
+	return result, nil
+}
+
+func (self *Services) GetUniqueListByType(sess *session.Session, t ServiceType) ([]ServicePack, *pkg.ErrorMessage) {
+	dataMap := make(map[string][]ServicePack)
+	self.mutex.Lock()
+	for _, sp := range self.serviceInfos {
+		if sp.Type&t == t {
+			if _, ok := dataMap[sp.Name]; !ok {
+				dataMap[sp.Name] = []ServicePack{sp}
+			} else {
+				dataMap[sp.Name] = append(dataMap[sp.Name], sp)
+			}
+		}
+	}
+	self.mutex.Unlock()
+
+	if len(dataMap) == 0 {
+		return nil, pkg.NewErrorMessage(pkg.STAT_ERR_EMPTY_RESULT, "no results")
+	}
+
+	result := []ServicePack{}
+
+	for _, list := range dataMap {
+		sort.Slice(list, func(i, j int) bool {
+			return result[i].ClientCount < result[j].ClientCount
+		})
+		result = append(result, list[0])
+	}
+
+	return result, nil
 }
