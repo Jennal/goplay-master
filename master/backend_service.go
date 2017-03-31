@@ -35,6 +35,9 @@ func NewBackendService(name string, serv transfer.IServer) *BackendService {
 		mc:      NewMasterClient(tcp.NewClient()),
 	}
 
+	result.UnregistDelegate(result.Service)
+	result.RegistDelegate(result)
+
 	result.RegistFilter(NewBackendFilter(result.Service))
 	return result
 }
@@ -55,6 +58,7 @@ func (self *BackendService) ConnectMaster(host string, port int) error {
 }
 
 func (self *BackendService) OnNewClient(client transfer.IClient) {
+	// log.Log("**********************************")
 	serviceClient := self.RegistNewClient(client)
 	// self.HandlerOnNewClient(serviceClient.Session)
 	serviceClient.Emit(transfer.EVENT_CLIENT_CONNECTED, client)

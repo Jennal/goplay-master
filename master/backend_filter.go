@@ -14,18 +14,22 @@ package master
 
 import (
 	"github.com/jennal/goplay/filter"
+	"github.com/jennal/goplay/log"
 	"github.com/jennal/goplay/pkg"
 	"github.com/jennal/goplay/service"
 	"github.com/jennal/goplay/session"
+	"github.com/jennal/goplay/transfer"
 )
 
 type BackendFilter struct {
-	service *service.Service
+	service        *service.Service
+	sessionManager *session.SessionManager
 }
 
 func NewBackendFilter(serv *service.Service) filter.IFilter {
 	return &BackendFilter{
-		service: serv,
+		service:        serv,
+		sessionManager: session.NewSessionManager(),
 	}
 }
 
@@ -35,16 +39,30 @@ func (self *BackendFilter) OnNewClient(sess *session.Session) bool /* return fal
 }
 
 func (self *BackendFilter) OnRecv(sess *session.Session, header *pkg.Header, body []byte) bool /* return false to ignore */ {
-	if header.Type != pkg.PKG_RPC_NOTIFY || header.Route != ON_CONNECTOR_GOT_NET_CLIENT {
+	if !(header.Type == pkg.PKG_RPC_NOTIFY &&
+		(header.Route == ON_CONNECTOR_GOT_NET_CLIENT ||
+			header.Route == ON_CONNECTOR_CLIENT_DISCONNECTED)) {
 		return true
 	}
 
-	s := session.NewSession(sess.IClient)
-	s.Bind(sess.ID)
-	s.BindClientID(sess.ClientID)
-	s.SetEncoding(sess.Encoding)
+	s := self.sessionManager.GetSessionByID(sess.ID, sess.ClientID)
+	if s == nil {
+		s = session.NewSession(sess.IClient)
+		s.Bind(sess.ID)
+		s.BindClientID(sess.ClientID)
+		s.SetEncoding(sess.Encoding)
 
-	self.service.HandlerOnNewClient(s)
+		self.sessionManager.Add(s)
+	}
+
+	switch header.Route {
+	case ON_CONNECTOR_GOT_NET_CLIENT:
+		self.service.HandlerOnNewClient(s)
+	case ON_CONNECTOR_CLIENT_DISCONNECTED:
+		log.Log(">>>>>>>> BEFORE")
+		s.Emit(transfer.EVENT_CLIENT_DISCONNECTED, s.IClient)
+		log.Log("<<<<<<<< AFTER")
+	}
 
 	return false
 }

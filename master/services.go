@@ -25,7 +25,7 @@ import (
 	"github.com/jennal/goplay/transfer"
 )
 
-var serviceIDGen = session.IDGen
+// var serviceIDGen = session.IDGen
 
 type Services struct {
 	mutex          sync.Mutex
@@ -47,8 +47,8 @@ func (self *Services) OnStopped() {
 }
 
 func (self *Services) OnNewClient(sess *session.Session) {
-	id := serviceIDGen.NextID()
-	sess.Bind(id)
+	// id := serviceIDGen.NextID()
+	// sess.Bind(id)
 	log.Logf("%p => %d", sess, sess.ID)
 	self.sessionManager.Add(sess)
 }
