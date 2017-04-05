@@ -71,7 +71,7 @@ func (self *Services) onServicePackUpdated(sp ServicePack) {
 	for _, sess := range self.sessionManager.Sessions() {
 		sessSp, ok := self.serviceInfos[sess.ID]
 		if !ok {
-			log.Errorf("can't happen!!")
+			/* some service down */
 			continue
 		}
 
