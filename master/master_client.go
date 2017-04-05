@@ -72,7 +72,7 @@ func (self *MasterClient) Bind(serv transfer.IServer, sp *ServicePack, host stri
 	}
 
 	serv.On(transfer.EVENT_SERVER_NEW_CLIENT, self, func(sess transfer.IClient) {
-		sess.On(transfer.EVENT_CLIENT_DISCONNECTED, self, func(cli transfer.IClient) {
+		sess.Once(transfer.EVENT_CLIENT_DISCONNECTED, self, func(cli transfer.IClient) {
 			self.dataMutex.Lock()
 			defer self.dataMutex.Unlock()
 			self.data.ClientCount--
