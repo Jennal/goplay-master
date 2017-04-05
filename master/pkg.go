@@ -13,6 +13,7 @@
 package master
 
 import "github.com/jennal/goplay/data"
+import "fmt"
 
 type ServiceType uint8
 
@@ -55,4 +56,8 @@ func NewServicePack(t ServiceType, name string, port int) ServicePack {
 		Port:        port,
 		ClientCount: 0,
 	}
+}
+
+func (sp ServicePack) Addr() string {
+	return fmt.Sprintf("%v:%v", sp.IP, sp.Port)
 }

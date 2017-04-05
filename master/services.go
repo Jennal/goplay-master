@@ -80,12 +80,15 @@ func (self *Services) onServicePackUpdated(sp ServicePack) {
 			continue
 		}
 
-		log.Logf("Push backend Update: %v => %#v", sess.RemoteAddr(), sp)
-		sess.Push(ON_BACKEND_UPDATED, sp)
+		if sessSp.Type.Is(ST_CONNECTOR) ||
+			(sessSp.Type.IsBackend() && sessSp.Name == sp.Name) {
+			log.Logf("Push backend Update: %v => %#v", sess.RemoteAddr(), sp)
+			sess.Push(ON_BACKEND_UPDATED, sp)
+		}
 	}
 }
 
-func (self *Services) Add(sess *session.Session, pack ServicePack) (pkg.Status, *pkg.ErrorMessage) {
+func (self *Services) Add(sess *session.Session, pack ServicePack) (ServicePack, *pkg.ErrorMessage) {
 	sess.Once(transfer.EVENT_CLIENT_DISCONNECTED, self, func(cli transfer.IClient) {
 		self.mutex.Lock()
 		defer self.mutex.Unlock()
@@ -101,10 +104,10 @@ func (self *Services) Add(sess *session.Session, pack ServicePack) (pkg.Status, 
 
 	self.onServicePackUpdated(pack)
 
-	return pkg.STAT_OK, nil
+	return pack, nil
 }
 
-func (self *Services) Update(sess *session.Session, pack ServicePack) (pkg.Status, *pkg.ErrorMessage) {
+func (self *Services) Update(sess *session.Session, pack ServicePack) (ServicePack, *pkg.ErrorMessage) {
 	self.fixIP(sess, &pack)
 
 	self.mutex.Lock()
@@ -113,13 +116,18 @@ func (self *Services) Update(sess *session.Session, pack ServicePack) (pkg.Statu
 
 	self.onServicePackUpdated(pack)
 
-	return pkg.STAT_OK, nil
+	return pack, nil
 }
 
 func (self *Services) GetListByName(sess *session.Session, name string) ([]ServicePack, *pkg.ErrorMessage) {
 	result := make([]ServicePack, 0)
 	self.mutex.Lock()
 	for _, sp := range self.serviceInfos {
+		log.Log("====> ", sp.Addr(), " | ", sess.RemoteAddr().String())
+		if sp.Addr() == sess.RemoteAddr().String() {
+			continue
+		}
+
 		if sp.Name == name {
 			result = append(result, sp)
 		}
@@ -137,6 +145,11 @@ func (self *Services) GetListByTags(sess *session.Session, tags []string) ([]Ser
 	result := make([]ServicePack, 0)
 	self.mutex.Lock()
 	for _, sp := range self.serviceInfos {
+		log.Log("====> ", sp.Addr(), " | ", sess.RemoteAddr().String())
+		if sp.Addr() == sess.RemoteAddr().String() {
+			continue
+		}
+
 		if sp.Contains(tags...) {
 			result = append(result, sp)
 		}

@@ -42,6 +42,16 @@ func NewMasterClient(cli transfer.IClient) *MasterClient {
 	}
 }
 
+func (self *MasterClient) ServicePack() *ServicePack {
+	return self.data
+}
+
+func (self *MasterClient) IsSelfServicePack(sp *ServicePack) bool {
+	return self.data.Name == sp.Name &&
+		self.data.IP == sp.IP &&
+		self.data.Port == sp.Port
+}
+
 func (self *MasterClient) Bind(serv transfer.IServer, sp *ServicePack, host string, port int) error {
 	self.server = serv
 	self.data = sp
@@ -55,11 +65,13 @@ func (self *MasterClient) Bind(serv transfer.IServer, sp *ServicePack, host stri
 
 				if self.isDataDirty {
 					self.isDataDirty = false
-					_, err := self.Update(self.data)
+					sp, err := self.Update(self.data)
 					if err != nil {
 						log.Error(err)
 						return
 					}
+
+					self.data = &sp
 				}
 			}
 		}()
@@ -95,28 +107,28 @@ func (self *MasterClient) Bind(serv transfer.IServer, sp *ServicePack, host stri
 		return err
 	}
 
-	_, em := self.Add(self.data)
-	if err != nil {
+	ssp, em := self.Add(self.data)
+	if em != nil {
 		return log.NewError(em.Error())
 	}
+
+	self.data = &ssp
 
 	return nil
 }
 
-func (self *MasterClient) Add(pack *ServicePack) (stat pkg.Status, err *pkg.ErrorMessage) {
+func (self *MasterClient) Add(pack *ServicePack) (sp ServicePack, err *pkg.ErrorMessage) {
 	aop.Parallel(func(c chan bool) {
-		e := self.Request("master.services.add", pack, func(st pkg.Status) {
-			stat = st
+		e := self.Request("master.services.add", pack, func(s ServicePack) {
+			sp = s
 			err = nil
 			c <- true
 		}, func(e *pkg.ErrorMessage) {
-			stat = pkg.STAT_ERR
 			err = e
 			c <- true
 		})
 
 		if e != nil {
-			stat = pkg.STAT_ERR
 			err = pkg.NewErrorMessage(pkg.STAT_ERR, e.Error())
 			c <- true
 		}
@@ -125,20 +137,18 @@ func (self *MasterClient) Add(pack *ServicePack) (stat pkg.Status, err *pkg.Erro
 	return
 }
 
-func (self *MasterClient) Update(pack *ServicePack) (stat pkg.Status, err *pkg.ErrorMessage) {
+func (self *MasterClient) Update(pack *ServicePack) (sp ServicePack, err *pkg.ErrorMessage) {
 	aop.Parallel(func(c chan bool) {
-		e := self.Request("master.services.update", pack, func(s pkg.Status) {
-			stat = s
+		e := self.Request("master.services.update", pack, func(s ServicePack) {
+			sp = s
 			err = nil
 			c <- true
 		}, func(e *pkg.ErrorMessage) {
-			stat = pkg.STAT_ERR
 			err = e
 			c <- true
 		})
 
 		if e != nil {
-			stat = pkg.STAT_ERR
 			err = pkg.NewErrorMessage(pkg.STAT_ERR, e.Error())
 			c <- true
 		}
