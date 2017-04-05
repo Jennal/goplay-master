@@ -85,11 +85,8 @@ func (self *MasterClient) Bind(serv transfer.IServer, sp *ServicePack, host stri
 		self.isDataDirty = true
 	})
 
-	self.AddListener(ON_CONNECTOR_UPDATED, func(sp ServicePack) {
-		self.Emit(ON_CONNECTOR_UPDATED, sp)
-	})
-
 	self.AddListener(ON_BACKEND_UPDATED, func(sp ServicePack) {
+		log.Log(ON_BACKEND_UPDATED, ": ", sp)
 		self.Emit(ON_BACKEND_UPDATED, sp)
 	})
 

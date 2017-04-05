@@ -64,22 +64,24 @@ func (self *Services) fixIP(sess *session.Session, pack *ServicePack) {
 }
 
 func (self *Services) onServicePackUpdated(sp ServicePack) {
-	if !sp.Type.IsBackend() && !sp.Type.Is(ST_CONNECTOR) {
+	if !sp.Type.IsBackend() {
 		return
 	}
 
-	for _, sess := range self.sessionManager.Sessions() {
+	sessions := self.sessionManager.Sessions()
+	for _, sess := range sessions {
 		sessSp, ok := self.serviceInfos[sess.ID]
 		if !ok {
 			/* some service down */
 			continue
 		}
 
-		if sp.Type.IsBackend() && sessSp.Type.Is(ST_CONNECTOR) {
-			sess.Push(ON_BACKEND_UPDATED, sp)
-		} else if sp.Type.Is(ST_CONNECTOR) && sessSp.Type.IsBackend() {
-			sess.Push(ON_CONNECTOR_UPDATED, sp)
+		if sessSp.IP == sp.IP && sessSp.Port == sp.Port {
+			continue
 		}
+
+		log.Logf("Push backend Update: %v => %#v", sess.RemoteAddr(), sp)
+		sess.Push(ON_BACKEND_UPDATED, sp)
 	}
 }
 
