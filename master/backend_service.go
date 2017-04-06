@@ -94,18 +94,6 @@ func (self *BackendService) connectBackend(sp ServicePack) {
 		delete(self.serviceInfos, sp.Addr())
 	})
 
-	client.On(transfer.EVENT_CLIENT_RECVED, self, func(cli transfer.IClient, header *pkg.Header, data []byte) {
-		if !channel.IsChannel(header) {
-			return
-		}
-
-		name := channel.GetChannelName(header.Route)
-		ch := channel.GetChannelManager().Get(name)
-		if ch != nil {
-			ch.BroadcastRaw(data)
-		}
-	})
-
 	err := client.Connect(sp.IP, sp.Port)
 	if err != nil {
 		log.Error(err)
@@ -157,15 +145,40 @@ func (self *BackendService) OnNewClient(client transfer.IClient) {
 	// log.Log("**********************************")
 	serviceClient := self.RegistNewClient(client)
 	serviceClient.On(transfer.EVENT_CLIENT_SENT, self, func(cli transfer.IClient, header *pkg.Header, data []byte) {
-		if !channel.IsChannel(header) {
+		// if header.Type == pkg.PKG_HEARTBEAT || header.Type == pkg.PKG_HEARTBEAT_RESPONSE {
+		// 	return
+		// }
+		// log.Logf("<==== Recv from Other BE:\n\theader => %#v\n\tbody => %#v | %v\n", header, data, string(data))
+
+		if !channel.IsPush(header) {
 			return
 		}
 
 		backends := self.GetAllBackends()
 		for _, be := range backends {
-			be.PushRaw(header.Route, data)
+			// log.Log("====> Sending to: ", be.RemoteAddr())
+			be.Broadcast(header.Route, data)
 		}
 	})
+
+	serviceClient.On(transfer.EVENT_CLIENT_RECVED, self, func(cli transfer.IClient, header *pkg.Header, data []byte) {
+		// if header.Type == pkg.PKG_HEARTBEAT || header.Type == pkg.PKG_HEARTBEAT_RESPONSE {
+		// 	return
+		// }
+		// log.Logf("<==== Recv from Other BE:\n\theader => %#v\n\tbody => %#v | %v\n", header, data, string(data))
+
+		if !channel.IsBroadcast(header) {
+			return
+		}
+
+		name := channel.GetChannelName(header.Route)
+		ch := channel.GetChannelManager().Get(name)
+		// log.Log("\t=>>>>> ", name, "\t", ch)
+		if ch != nil {
+			ch.BroadcastRaw(data)
+		}
+	})
+
 	// self.HandlerOnNewClient(serviceClient.Session)
 	serviceClient.Emit(transfer.EVENT_CLIENT_CONNECTED, client)
 	self.Emit(ON_NEW_RPC_CLIENT, serviceClient)
