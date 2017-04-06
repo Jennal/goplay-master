@@ -228,8 +228,9 @@ func (self *Services) GetUniqueListByType(sess *session.Session, t ServiceType) 
 
 	for _, list := range dataMap {
 		sort.Slice(list, func(i, j int) bool {
-			return result[i].ClientCount < result[j].ClientCount
+			return list[i].ClientCount < list[j].ClientCount
 		})
+		log.Log("list: ", list)
 		result = append(result, list[0])
 	}
 

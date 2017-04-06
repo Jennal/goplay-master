@@ -146,7 +146,7 @@ func (self *BackendService) ConnectMaster(host string, port int) error {
 	}
 
 	for _, sp := range list {
-		log.Log("===> ", sp)
+		// log.Log("===> ", sp)
 		self.connectBackend(sp)
 	}
 
