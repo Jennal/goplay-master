@@ -5,9 +5,9 @@
 //
 // http://opensource.org/licenses/MIT
 //
-// Unless required by applicable law or agreed to in writing, software distributed 
-// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR 
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the 
+// Unless required by applicable law or agreed to in writing, software distributed
+// under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
 package master
@@ -62,7 +62,18 @@ func TestMasterClient(t *testing.T) {
 	}
 
 	s, err := client.Add(&sp)
-	assert.Equal(t, pkg.STAT_OK, s)
+	assert.Equal(t, ServicePack{
+		TagContainerImpl: data.TagContainerImpl{
+			Tags: map[string]bool{
+				"Hello": true,
+			},
+		},
+		Type:        ST_MASTER,
+		Name:        NAME,
+		IP:          "127.0.0.1",
+		Port:        PORT,
+		ClientCount: 0,
+	}, s)
 	assert.Nil(t, err)
 	assert.Equal(t, map[uint32]ServicePack{
 		0: ServicePack{
@@ -85,7 +96,8 @@ func TestMasterClient(t *testing.T) {
 		"World": true,
 	}
 	s, err = client1.Add(&newSp)
-	assert.Equal(t, pkg.STAT_OK, s)
+	newSp.IP = "127.0.0.1"
+	assert.Equal(t, newSp, s)
 	assert.Nil(t, err)
 
 	assert.Equal(t, map[uint32]ServicePack{
@@ -118,7 +130,8 @@ func TestMasterClient(t *testing.T) {
 
 	sp.ClientCount = 10
 	s, err = client.Update(&sp)
-	assert.Equal(t, pkg.STAT_OK, s)
+	sp.IP = "127.0.0.1"
+	assert.Equal(t, sp, s)
 	assert.Nil(t, err)
 
 	assert.Equal(t, map[uint32]ServicePack{
