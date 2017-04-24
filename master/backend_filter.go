@@ -57,7 +57,9 @@ func (self *BackendFilter) OnRecv(sess *session.Session, header *pkg.Header, bod
 
 	switch header.Route {
 	case ON_CONNECTOR_GOT_NET_CLIENT:
-		self.service.HandlerOnNewClient(s)
+		if self.service.FilterOnNewClient(s) {
+			self.service.HandlerOnNewClient(s)
+		}
 	case ON_CONNECTOR_CLIENT_DISCONNECTED:
 		log.Log(">>>>>>>> BEFORE")
 		s.Emit(transfer.EVENT_CLIENT_DISCONNECTED, s.IClient)
