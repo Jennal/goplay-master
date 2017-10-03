@@ -129,7 +129,7 @@ func (self *MasterClient) Add(pack *ServicePack) (sp ServicePack, err *pkg.Error
 		})
 
 		if e != nil {
-			err = pkg.NewErrorMessage(pkg.STAT_ERR, e.Error())
+			err = pkg.NewErrorMessage(pkg.Status_ERR, e.Error())
 			c <- true
 		}
 	})
@@ -149,7 +149,7 @@ func (self *MasterClient) Update(pack *ServicePack) (sp ServicePack, err *pkg.Er
 		})
 
 		if e != nil {
-			err = pkg.NewErrorMessage(pkg.STAT_ERR, e.Error())
+			err = pkg.NewErrorMessage(pkg.Status_ERR, e.Error())
 			c <- true
 		}
 	})
@@ -171,7 +171,7 @@ func (self *MasterClient) GetListByName(name string) (result []ServicePack, err 
 
 		if e != nil {
 			result = nil
-			err = pkg.NewErrorMessage(pkg.STAT_ERR, e.Error())
+			err = pkg.NewErrorMessage(pkg.Status_ERR, e.Error())
 			c <- true
 		}
 	})
@@ -193,7 +193,7 @@ func (self *MasterClient) GetListByTags(tags []string) (result []ServicePack, er
 
 		if e != nil {
 			result = nil
-			err = pkg.NewErrorMessage(pkg.STAT_ERR, e.Error())
+			err = pkg.NewErrorMessage(pkg.Status_ERR, e.Error())
 			c <- true
 		}
 	})
@@ -213,7 +213,7 @@ func (self *MasterClient) GetByName(name string) (result ServicePack, err *pkg.E
 		})
 
 		if e != nil {
-			err = pkg.NewErrorMessage(pkg.STAT_ERR, e.Error())
+			err = pkg.NewErrorMessage(pkg.Status_ERR, e.Error())
 			c <- true
 		}
 	})
@@ -233,7 +233,7 @@ func (self *MasterClient) GetByTags(tags []string) (result ServicePack, err *pkg
 		})
 
 		if e != nil {
-			err = pkg.NewErrorMessage(pkg.STAT_ERR, e.Error())
+			err = pkg.NewErrorMessage(pkg.Status_ERR, e.Error())
 			c <- true
 		}
 	})
@@ -255,7 +255,7 @@ func (self *MasterClient) GetListByType(t ServiceType) (result []ServicePack, er
 
 		if e != nil {
 			result = nil
-			err = pkg.NewErrorMessage(pkg.STAT_ERR, e.Error())
+			err = pkg.NewErrorMessage(pkg.Status_ERR, e.Error())
 			c <- true
 		}
 	})
@@ -277,7 +277,7 @@ func (self *MasterClient) GetUniqueListByType(t ServiceType) (result []ServicePa
 
 		if e != nil {
 			result = nil
-			err = pkg.NewErrorMessage(pkg.STAT_ERR, e.Error())
+			err = pkg.NewErrorMessage(pkg.Status_ERR, e.Error())
 			c <- true
 		}
 	})

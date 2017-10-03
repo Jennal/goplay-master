@@ -164,7 +164,7 @@ func TestMasterClient(t *testing.T) {
 
 	list, err := client.GetListByName("test")
 	assert.Nil(t, list)
-	assert.Equal(t, pkg.NewErrorMessage(pkg.STAT_ERR_EMPTY_RESULT, "no results"), err)
+	assert.Equal(t, pkg.NewErrorMessage(pkg.Status_ERR_EMPTY_RESULT, "no results"), err)
 
 	list, err = client.GetListByName(NAME)
 	assert.Nil(t, err)
@@ -258,7 +258,7 @@ func TestMasterClient(t *testing.T) {
 		"Hello", "world",
 	})
 	assert.Nil(t, list)
-	assert.Equal(t, pkg.NewErrorMessage(pkg.STAT_ERR_EMPTY_RESULT, "no results"), err)
+	assert.Equal(t, pkg.NewErrorMessage(pkg.Status_ERR_EMPTY_RESULT, "no results"), err)
 
 	result, err := client.GetByName(NAME)
 	assert.Equal(t, ServicePack{
@@ -278,7 +278,7 @@ func TestMasterClient(t *testing.T) {
 
 	result, err = client.GetByName("none")
 	assert.Equal(t, ServicePack{}, result)
-	assert.Equal(t, pkg.NewErrorMessage(pkg.STAT_ERR_EMPTY_RESULT, "no results"), err)
+	assert.Equal(t, pkg.NewErrorMessage(pkg.Status_ERR_EMPTY_RESULT, "no results"), err)
 
 	result, err = client.GetByTags([]string{
 		"Hello",
@@ -320,5 +320,5 @@ func TestMasterClient(t *testing.T) {
 		"Hello", "not exists tag",
 	})
 	assert.Equal(t, ServicePack{}, result)
-	assert.Equal(t, pkg.NewErrorMessage(pkg.STAT_ERR_EMPTY_RESULT, "no results"), err)
+	assert.Equal(t, pkg.NewErrorMessage(pkg.Status_ERR_EMPTY_RESULT, "no results"), err)
 }

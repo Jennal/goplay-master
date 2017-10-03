@@ -135,7 +135,7 @@ func (self *Services) GetListByName(sess *session.Session, name string) ([]Servi
 	self.mutex.Unlock()
 
 	if len(result) == 0 {
-		return nil, pkg.NewErrorMessage(pkg.STAT_ERR_EMPTY_RESULT, "no results")
+		return nil, pkg.NewErrorMessage(pkg.Status_ERR_EMPTY_RESULT, "no results")
 	}
 
 	return result, nil
@@ -157,7 +157,7 @@ func (self *Services) GetListByTags(sess *session.Session, tags []string) ([]Ser
 	self.mutex.Unlock()
 
 	if len(result) == 0 {
-		return nil, pkg.NewErrorMessage(pkg.STAT_ERR_EMPTY_RESULT, "no results")
+		return nil, pkg.NewErrorMessage(pkg.Status_ERR_EMPTY_RESULT, "no results")
 	}
 
 	return result, nil
@@ -200,7 +200,7 @@ func (self *Services) GetListByType(sess *session.Session, t ServiceType) ([]Ser
 	self.mutex.Unlock()
 
 	if len(result) == 0 {
-		return nil, pkg.NewErrorMessage(pkg.STAT_ERR_EMPTY_RESULT, "no results")
+		return nil, pkg.NewErrorMessage(pkg.Status_ERR_EMPTY_RESULT, "no results")
 	}
 
 	return result, nil
@@ -221,7 +221,7 @@ func (self *Services) GetUniqueListByType(sess *session.Session, t ServiceType) 
 	self.mutex.Unlock()
 
 	if len(dataMap) == 0 {
-		return nil, pkg.NewErrorMessage(pkg.STAT_ERR_EMPTY_RESULT, "no results")
+		return nil, pkg.NewErrorMessage(pkg.Status_ERR_EMPTY_RESULT, "no results")
 	}
 
 	result := []ServicePack{}
