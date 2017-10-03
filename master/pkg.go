@@ -46,8 +46,8 @@ type ServicePack struct {
 	ClientCount int
 }
 
-func NewServicePack(t ServiceType, name string, port int) ServicePack {
-	return ServicePack{
+func NewServicePack(t ServiceType, name string, port int) *ServicePack {
+	return &ServicePack{
 		TagContainerImpl: data.TagContainerImpl{
 			Tags: make(map[string]bool),
 		},
@@ -58,6 +58,6 @@ func NewServicePack(t ServiceType, name string, port int) ServicePack {
 	}
 }
 
-func (sp ServicePack) Addr() string {
+func (sp *ServicePack) Addr() string {
 	return fmt.Sprintf("%v:%v", sp.IP, sp.Port)
 }

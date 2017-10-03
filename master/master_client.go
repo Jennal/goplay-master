@@ -71,7 +71,7 @@ func (self *MasterClient) Bind(serv transfer.IServer, sp *ServicePack, host stri
 						return
 					}
 
-					self.data = &sp
+					self.data = sp
 				}
 			}
 		}()
@@ -112,14 +112,14 @@ func (self *MasterClient) Bind(serv transfer.IServer, sp *ServicePack, host stri
 		return log.NewError(em.Error())
 	}
 
-	self.data = &ssp
+	self.data = ssp
 
 	return nil
 }
 
-func (self *MasterClient) Add(pack *ServicePack) (sp ServicePack, err *pkg.ErrorMessage) {
+func (self *MasterClient) Add(pack *ServicePack) (sp *ServicePack, err *pkg.ErrorMessage) {
 	aop.Parallel(func(c chan bool) {
-		e := self.Request("master.services.add", pack, func(s ServicePack) {
+		e := self.Request("master.services.add", pack, func(s *ServicePack) {
 			sp = s
 			err = nil
 			c <- true
@@ -137,9 +137,9 @@ func (self *MasterClient) Add(pack *ServicePack) (sp ServicePack, err *pkg.Error
 	return
 }
 
-func (self *MasterClient) Update(pack *ServicePack) (sp ServicePack, err *pkg.ErrorMessage) {
+func (self *MasterClient) Update(pack *ServicePack) (sp *ServicePack, err *pkg.ErrorMessage) {
 	aop.Parallel(func(c chan bool) {
-		e := self.Request("master.services.update", pack, func(s ServicePack) {
+		e := self.Request("master.services.update", pack, func(s *ServicePack) {
 			sp = s
 			err = nil
 			c <- true
@@ -157,9 +157,9 @@ func (self *MasterClient) Update(pack *ServicePack) (sp ServicePack, err *pkg.Er
 	return
 }
 
-func (self *MasterClient) GetListByName(name string) (result []ServicePack, err *pkg.ErrorMessage) {
+func (self *MasterClient) GetListByName(name string) (result []*ServicePack, err *pkg.ErrorMessage) {
 	aop.Parallel(func(c chan bool) {
-		e := self.Request("master.services.getlistbyname", name, func(s []ServicePack) {
+		e := self.Request("master.services.getlistbyname", name, func(s []*ServicePack) {
 			result = s
 			err = nil
 			c <- true
@@ -179,9 +179,9 @@ func (self *MasterClient) GetListByName(name string) (result []ServicePack, err 
 	return
 }
 
-func (self *MasterClient) GetListByTags(tags []string) (result []ServicePack, err *pkg.ErrorMessage) {
+func (self *MasterClient) GetListByTags(tags []string) (result []*ServicePack, err *pkg.ErrorMessage) {
 	aop.Parallel(func(c chan bool) {
-		e := self.Request("master.services.getlistbytags", tags, func(s []ServicePack) {
+		e := self.Request("master.services.getlistbytags", tags, func(s []*ServicePack) {
 			result = s
 			err = nil
 			c <- true
@@ -201,9 +201,9 @@ func (self *MasterClient) GetListByTags(tags []string) (result []ServicePack, er
 	return
 }
 
-func (self *MasterClient) GetByName(name string) (result ServicePack, err *pkg.ErrorMessage) {
+func (self *MasterClient) GetByName(name string) (result *ServicePack, err *pkg.ErrorMessage) {
 	aop.Parallel(func(c chan bool) {
-		e := self.Request("master.services.getbyname", name, func(s ServicePack) {
+		e := self.Request("master.services.getbyname", name, func(s *ServicePack) {
 			result = s
 			err = nil
 			c <- true
@@ -221,9 +221,9 @@ func (self *MasterClient) GetByName(name string) (result ServicePack, err *pkg.E
 	return
 }
 
-func (self *MasterClient) GetByTags(tags []string) (result ServicePack, err *pkg.ErrorMessage) {
+func (self *MasterClient) GetByTags(tags []string) (result *ServicePack, err *pkg.ErrorMessage) {
 	aop.Parallel(func(c chan bool) {
-		e := self.Request("master.services.getbytags", tags, func(s ServicePack) {
+		e := self.Request("master.services.getbytags", tags, func(s *ServicePack) {
 			result = s
 			err = nil
 			c <- true
@@ -241,31 +241,9 @@ func (self *MasterClient) GetByTags(tags []string) (result ServicePack, err *pkg
 	return
 }
 
-func (self *MasterClient) GetListByType(t ServiceType) (result []ServicePack, err *pkg.ErrorMessage) {
+func (self *MasterClient) GetListByType(t ServiceType) (result []*ServicePack, err *pkg.ErrorMessage) {
 	aop.Parallel(func(c chan bool) {
-		e := self.Request("master.services.getlistbytype", t, func(s []ServicePack) {
-			result = s
-			err = nil
-			c <- true
-		}, func(e *pkg.ErrorMessage) {
-			result = nil
-			err = e
-			c <- true
-		})
-
-		if e != nil {
-			result = nil
-			err = pkg.NewErrorMessage(pkg.Status_ERR, e.Error())
-			c <- true
-		}
-	})
-
-	return
-}
-
-func (self *MasterClient) GetUniqueListByType(t ServiceType) (result []ServicePack, err *pkg.ErrorMessage) {
-	aop.Parallel(func(c chan bool) {
-		e := self.Request("master.services.getuniquelistbytype", t, func(s []ServicePack) {
+		e := self.Request("master.services.getlistbytype", t, func(s []*ServicePack) {
 			result = s
 			err = nil
 			c <- true
@@ -285,10 +263,32 @@ func (self *MasterClient) GetUniqueListByType(t ServiceType) (result []ServicePa
 	return
 }
 
-func (self *MasterClient) GetConnectors() (result []ServicePack, err *pkg.ErrorMessage) {
+func (self *MasterClient) GetUniqueListByType(t ServiceType) (result []*ServicePack, err *pkg.ErrorMessage) {
+	aop.Parallel(func(c chan bool) {
+		e := self.Request("master.services.getuniquelistbytype", t, func(s []*ServicePack) {
+			result = s
+			err = nil
+			c <- true
+		}, func(e *pkg.ErrorMessage) {
+			result = nil
+			err = e
+			c <- true
+		})
+
+		if e != nil {
+			result = nil
+			err = pkg.NewErrorMessage(pkg.Status_ERR, e.Error())
+			c <- true
+		}
+	})
+
+	return
+}
+
+func (self *MasterClient) GetConnectors() (result []*ServicePack, err *pkg.ErrorMessage) {
 	return self.GetListByType(ST_CONNECTOR)
 }
 
-func (self *MasterClient) GetBackends() (result []ServicePack, err *pkg.ErrorMessage) {
+func (self *MasterClient) GetBackends() (result []*ServicePack, err *pkg.ErrorMessage) {
 	return self.GetUniqueListByType(ST_BACKEND)
 }

@@ -33,7 +33,7 @@ type BackendService struct {
 	*service.Service
 	mc *MasterClient
 
-	serviceInfos map[string]ServicePack
+	serviceInfos map[string]*ServicePack
 	services     map[string]*service.ServiceClient
 
 	servicesMutex sync.Mutex
@@ -43,12 +43,12 @@ func NewBackendService(name string, serv transfer.IServer) *BackendService {
 	result := &BackendService{
 		Service:      service.NewService(name, serv),
 		mc:           NewMasterClient(tcp.NewClient()),
-		serviceInfos: make(map[string]ServicePack),
+		serviceInfos: make(map[string]*ServicePack),
 		services:     make(map[string]*service.ServiceClient),
 	}
 
-	result.mc.On(ON_BACKEND_UPDATED, result, func(sp ServicePack) {
-		if result.mc.IsSelfServicePack(&sp) {
+	result.mc.On(ON_BACKEND_UPDATED, result, func(sp *ServicePack) {
+		if result.mc.IsSelfServicePack(sp) {
 			return
 		}
 
@@ -70,8 +70,8 @@ func NewBackendService(name string, serv transfer.IServer) *BackendService {
 	return result
 }
 
-func (self *BackendService) connectBackend(sp ServicePack) {
-	if self.mc.IsSelfServicePack(&sp) {
+func (self *BackendService) connectBackend(sp *ServicePack) {
+	if self.mc.IsSelfServicePack(sp) {
 		return
 	}
 
@@ -123,7 +123,7 @@ func (serv *BackendService) UnregistBackendDelegate(delegate IBackendServiceDele
 
 func (self *BackendService) ConnectMaster(host string, port int) error {
 	sp := NewServicePack(ST_BACKEND, self.Name, self.Port())
-	err := self.mc.Bind(self, &sp, host, port)
+	err := self.mc.Bind(self, sp, host, port)
 	if err != nil {
 		return err
 	}

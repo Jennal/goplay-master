@@ -29,13 +29,13 @@ import (
 
 type Services struct {
 	mutex          sync.Mutex
-	serviceInfos   map[uint32]ServicePack
+	serviceInfos   map[uint32]*ServicePack
 	sessionManager *session.SessionManager
 }
 
 func NewServices() *Services {
 	return &Services{
-		serviceInfos:   make(map[uint32]ServicePack),
+		serviceInfos:   map[uint32]*ServicePack{},
 		sessionManager: session.NewSessionManager(),
 	}
 }
@@ -63,7 +63,7 @@ func (self *Services) fixIP(sess *session.Session, pack *ServicePack) {
 	}
 }
 
-func (self *Services) onServicePackUpdated(sp ServicePack) {
+func (self *Services) onServicePackUpdated(sp *ServicePack) {
 	if !sp.Type.IsBackend() {
 		return
 	}
@@ -88,14 +88,14 @@ func (self *Services) onServicePackUpdated(sp ServicePack) {
 	}
 }
 
-func (self *Services) Add(sess *session.Session, pack ServicePack) (ServicePack, *pkg.ErrorMessage) {
+func (self *Services) Add(sess *session.Session, pack *ServicePack) (*ServicePack, *pkg.ErrorMessage) {
 	sess.Once(transfer.EVENT_CLIENT_DISCONNECTED, self, func(cli transfer.IClient) {
 		self.mutex.Lock()
 		defer self.mutex.Unlock()
 		delete(self.serviceInfos, sess.ID)
 	})
 
-	self.fixIP(sess, &pack)
+	self.fixIP(sess, pack)
 
 	self.mutex.Lock()
 	log.Logf("%p => %d | %v", sess, sess.ID, pack)
@@ -107,8 +107,8 @@ func (self *Services) Add(sess *session.Session, pack ServicePack) (ServicePack,
 	return pack, nil
 }
 
-func (self *Services) Update(sess *session.Session, pack ServicePack) (ServicePack, *pkg.ErrorMessage) {
-	self.fixIP(sess, &pack)
+func (self *Services) Update(sess *session.Session, pack *ServicePack) (*ServicePack, *pkg.ErrorMessage) {
+	self.fixIP(sess, pack)
 
 	self.mutex.Lock()
 	self.serviceInfos[sess.ID] = pack
@@ -119,8 +119,8 @@ func (self *Services) Update(sess *session.Session, pack ServicePack) (ServicePa
 	return pack, nil
 }
 
-func (self *Services) GetListByName(sess *session.Session, name string) ([]ServicePack, *pkg.ErrorMessage) {
-	result := make([]ServicePack, 0)
+func (self *Services) GetListByName(sess *session.Session, name string) ([]*ServicePack, *pkg.ErrorMessage) {
+	result := []*ServicePack{}
 	self.mutex.Lock()
 	for _, sp := range self.serviceInfos {
 		log.Log("====> ", sp.Addr(), " | ", sess.RemoteAddr().String())
@@ -141,8 +141,8 @@ func (self *Services) GetListByName(sess *session.Session, name string) ([]Servi
 	return result, nil
 }
 
-func (self *Services) GetListByTags(sess *session.Session, tags []string) ([]ServicePack, *pkg.ErrorMessage) {
-	result := make([]ServicePack, 0)
+func (self *Services) GetListByTags(sess *session.Session, tags []string) ([]*ServicePack, *pkg.ErrorMessage) {
+	result := []*ServicePack{}
 	self.mutex.Lock()
 	for _, sp := range self.serviceInfos {
 		log.Log("====> ", sp.Addr(), " | ", sess.RemoteAddr().String())
@@ -163,10 +163,10 @@ func (self *Services) GetListByTags(sess *session.Session, tags []string) ([]Ser
 	return result, nil
 }
 
-func (self *Services) GetByName(sess *session.Session, name string) (ServicePack, *pkg.ErrorMessage) {
+func (self *Services) GetByName(sess *session.Session, name string) (*ServicePack, *pkg.ErrorMessage) {
 	result, err := self.GetListByName(sess, name)
 	if err != nil || len(result) <= 0 {
-		return ServicePack{}, err
+		return nil, err
 	}
 
 	sort.Slice(result, func(i, j int) bool {
@@ -176,10 +176,10 @@ func (self *Services) GetByName(sess *session.Session, name string) (ServicePack
 	return result[0], nil
 }
 
-func (self *Services) GetByTags(sess *session.Session, tags []string) (ServicePack, *pkg.ErrorMessage) {
+func (self *Services) GetByTags(sess *session.Session, tags []string) (*ServicePack, *pkg.ErrorMessage) {
 	result, err := self.GetListByTags(sess, tags)
 	if err != nil || len(result) <= 0 {
-		return ServicePack{}, err
+		return nil, err
 	}
 
 	sort.Slice(result, func(i, j int) bool {
@@ -189,8 +189,8 @@ func (self *Services) GetByTags(sess *session.Session, tags []string) (ServicePa
 	return result[0], nil
 }
 
-func (self *Services) GetListByType(sess *session.Session, t ServiceType) ([]ServicePack, *pkg.ErrorMessage) {
-	result := []ServicePack{}
+func (self *Services) GetListByType(sess *session.Session, t ServiceType) ([]*ServicePack, *pkg.ErrorMessage) {
+	result := []*ServicePack{}
 	self.mutex.Lock()
 	for _, sp := range self.serviceInfos {
 		if sp.Type&t == t {
@@ -206,13 +206,13 @@ func (self *Services) GetListByType(sess *session.Session, t ServiceType) ([]Ser
 	return result, nil
 }
 
-func (self *Services) GetUniqueListByType(sess *session.Session, t ServiceType) ([]ServicePack, *pkg.ErrorMessage) {
-	dataMap := make(map[string][]ServicePack)
+func (self *Services) GetUniqueListByType(sess *session.Session, t ServiceType) ([]*ServicePack, *pkg.ErrorMessage) {
+	dataMap := map[string][]*ServicePack{}
 	self.mutex.Lock()
 	for _, sp := range self.serviceInfos {
 		if sp.Type&t == t {
 			if _, ok := dataMap[sp.Name]; !ok {
-				dataMap[sp.Name] = []ServicePack{sp}
+				dataMap[sp.Name] = []*ServicePack{sp}
 			} else {
 				dataMap[sp.Name] = append(dataMap[sp.Name], sp)
 			}
@@ -224,7 +224,7 @@ func (self *Services) GetUniqueListByType(sess *session.Session, t ServiceType) 
 		return nil, pkg.NewErrorMessage(pkg.Status_ERR_EMPTY_RESULT, "no results")
 	}
 
-	result := []ServicePack{}
+	result := []*ServicePack{}
 
 	for _, list := range dataMap {
 		sort.Slice(list, func(i, j int) bool {

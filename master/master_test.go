@@ -31,7 +31,7 @@ func newClient() *MasterClient {
 	return client
 }
 
-func sortList(list []ServicePack) {
+func sortList(list []*ServicePack) {
 	sort.Slice(list, func(i, j int) bool {
 		return list[i].ClientCount > list[j].ClientCount
 	})
@@ -48,7 +48,7 @@ func TestMasterClient(t *testing.T) {
 	client := newClient()
 	client1 := newClient()
 
-	sp := ServicePack{
+	sp := &ServicePack{
 		TagContainerImpl: data.TagContainerImpl{
 			Tags: map[string]bool{
 				"Hello": true,
@@ -61,8 +61,8 @@ func TestMasterClient(t *testing.T) {
 		ClientCount: 0,
 	}
 
-	s, err := client.Add(&sp)
-	assert.Equal(t, ServicePack{
+	s, err := client.Add(sp)
+	assert.Equal(t, &ServicePack{
 		TagContainerImpl: data.TagContainerImpl{
 			Tags: map[string]bool{
 				"Hello": true,
@@ -75,8 +75,8 @@ func TestMasterClient(t *testing.T) {
 		ClientCount: 0,
 	}, s)
 	assert.Nil(t, err)
-	assert.Equal(t, map[uint32]ServicePack{
-		0: ServicePack{
+	assert.Equal(t, map[uint32]*ServicePack{
+		0: &ServicePack{
 			TagContainerImpl: data.TagContainerImpl{
 				Tags: map[string]bool{
 					"Hello": true,
@@ -90,18 +90,19 @@ func TestMasterClient(t *testing.T) {
 		},
 	}, hdl.serviceInfos)
 
-	newSp := sp
+	newVal := *sp
+	newSp := &newVal
 	newSp.Tags = map[string]bool{
 		"Hello": true,
 		"World": true,
 	}
-	s, err = client1.Add(&newSp)
+	s, err = client1.Add(newSp)
 	newSp.IP = "127.0.0.1"
 	assert.Equal(t, newSp, s)
 	assert.Nil(t, err)
 
-	assert.Equal(t, map[uint32]ServicePack{
-		0: ServicePack{
+	assert.Equal(t, map[uint32]*ServicePack{
+		0: &ServicePack{
 			TagContainerImpl: data.TagContainerImpl{
 				Tags: map[string]bool{
 					"Hello": true,
@@ -113,7 +114,7 @@ func TestMasterClient(t *testing.T) {
 			Port:        PORT,
 			ClientCount: 0,
 		},
-		1: ServicePack{
+		1: &ServicePack{
 			TagContainerImpl: data.TagContainerImpl{
 				Tags: map[string]bool{
 					"Hello": true,
@@ -129,13 +130,13 @@ func TestMasterClient(t *testing.T) {
 	}, hdl.serviceInfos)
 
 	sp.ClientCount = 10
-	s, err = client.Update(&sp)
+	s, err = client.Update(sp)
 	sp.IP = "127.0.0.1"
 	assert.Equal(t, sp, s)
 	assert.Nil(t, err)
 
-	assert.Equal(t, map[uint32]ServicePack{
-		0: ServicePack{
+	assert.Equal(t, map[uint32]*ServicePack{
+		0: &ServicePack{
 			TagContainerImpl: data.TagContainerImpl{
 				Tags: map[string]bool{
 					"Hello": true,
@@ -147,7 +148,7 @@ func TestMasterClient(t *testing.T) {
 			Port:        PORT,
 			ClientCount: 10,
 		},
-		1: ServicePack{
+		1: &ServicePack{
 			TagContainerImpl: data.TagContainerImpl{
 				Tags: map[string]bool{
 					"Hello": true,
@@ -170,8 +171,8 @@ func TestMasterClient(t *testing.T) {
 	assert.Nil(t, err)
 
 	sortList(list)
-	assert.Equal(t, []ServicePack{
-		ServicePack{
+	assert.Equal(t, []*ServicePack{
+		&ServicePack{
 			TagContainerImpl: data.TagContainerImpl{
 				Tags: map[string]bool{
 					"Hello": true,
@@ -183,7 +184,7 @@ func TestMasterClient(t *testing.T) {
 			Port:        PORT,
 			ClientCount: 10,
 		},
-		ServicePack{
+		&ServicePack{
 			TagContainerImpl: data.TagContainerImpl{
 				Tags: map[string]bool{
 					"Hello": true,
@@ -204,8 +205,8 @@ func TestMasterClient(t *testing.T) {
 	assert.Nil(t, err)
 
 	sortList(list)
-	assert.Equal(t, []ServicePack{
-		ServicePack{
+	assert.Equal(t, []*ServicePack{
+		&ServicePack{
 			TagContainerImpl: data.TagContainerImpl{
 				Tags: map[string]bool{
 					"Hello": true,
@@ -217,7 +218,7 @@ func TestMasterClient(t *testing.T) {
 			Port:        PORT,
 			ClientCount: 10,
 		},
-		ServicePack{
+		&ServicePack{
 			TagContainerImpl: data.TagContainerImpl{
 				Tags: map[string]bool{
 					"Hello": true,
@@ -238,8 +239,8 @@ func TestMasterClient(t *testing.T) {
 	assert.Nil(t, err)
 
 	sortList(list)
-	assert.Equal(t, []ServicePack{
-		ServicePack{
+	assert.Equal(t, []*ServicePack{
+		&ServicePack{
 			TagContainerImpl: data.TagContainerImpl{
 				Tags: map[string]bool{
 					"Hello": true,
@@ -261,7 +262,7 @@ func TestMasterClient(t *testing.T) {
 	assert.Equal(t, pkg.NewErrorMessage(pkg.Status_ERR_EMPTY_RESULT, "no results"), err)
 
 	result, err := client.GetByName(NAME)
-	assert.Equal(t, ServicePack{
+	assert.Equal(t, &ServicePack{
 		TagContainerImpl: data.TagContainerImpl{
 			Tags: map[string]bool{
 				"Hello": true,
@@ -277,13 +278,13 @@ func TestMasterClient(t *testing.T) {
 	assert.Nil(t, err)
 
 	result, err = client.GetByName("none")
-	assert.Equal(t, ServicePack{}, result)
+	assert.Nil(t, result)
 	assert.Equal(t, pkg.NewErrorMessage(pkg.Status_ERR_EMPTY_RESULT, "no results"), err)
 
 	result, err = client.GetByTags([]string{
 		"Hello",
 	})
-	assert.Equal(t, ServicePack{
+	assert.Equal(t, &ServicePack{
 		TagContainerImpl: data.TagContainerImpl{
 			Tags: map[string]bool{
 				"Hello": true,
@@ -301,7 +302,7 @@ func TestMasterClient(t *testing.T) {
 	result, err = client.GetByTags([]string{
 		"Hello", "World",
 	})
-	assert.Equal(t, ServicePack{
+	assert.Equal(t, &ServicePack{
 		TagContainerImpl: data.TagContainerImpl{
 			Tags: map[string]bool{
 				"Hello": true,
@@ -319,6 +320,6 @@ func TestMasterClient(t *testing.T) {
 	result, err = client.GetByTags([]string{
 		"Hello", "not exists tag",
 	})
-	assert.Equal(t, ServicePack{}, result)
+	assert.Nil(t, result)
 	assert.Equal(t, pkg.NewErrorMessage(pkg.Status_ERR_EMPTY_RESULT, "no results"), err)
 }
