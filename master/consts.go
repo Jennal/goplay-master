@@ -25,6 +25,6 @@ const (
 )
 
 func init() {
-	pkg.DefaultHandShake().RegistSpecRoute(ON_CONNECTOR_GOT_NET_CLIENT, 0xFF)
-	pkg.DefaultHandShake().RegistSpecRoute(ON_CONNECTOR_CLIENT_DISCONNECTED, 0xFE)
+	pkg.DefaultHandShake().RegistSpecRoute(ON_CONNECTOR_GOT_NET_CLIENT, 0xFFFF)
+	pkg.DefaultHandShake().RegistSpecRoute(ON_CONNECTOR_CLIENT_DISCONNECTED, 0xFFFE)
 }
