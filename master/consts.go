@@ -12,6 +12,8 @@
 
 package master
 
+import "github.com/jennal/goplay/pkg"
+
 const (
 	/* Events */
 	ON_BACKEND_UPDATED = "ON_BACKEND_UPDATED"
@@ -21,3 +23,8 @@ const (
 	ON_CONNECTOR_GOT_NET_CLIENT      = "ON_CONNECTOR_GOT_NET_CLIENT"
 	ON_CONNECTOR_CLIENT_DISCONNECTED = "ON_CONNECTOR_CLIENT_DISCONNECTED"
 )
+
+func init() {
+	pkg.DefaultHandShake().RegistSpecRoute(ON_CONNECTOR_GOT_NET_CLIENT, 0xFF)
+	pkg.DefaultHandShake().RegistSpecRoute(ON_CONNECTOR_CLIENT_DISCONNECTED, 0xFE)
+}
