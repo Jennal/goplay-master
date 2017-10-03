@@ -47,6 +47,10 @@ func NewBackendService(name string, serv transfer.IServer) *BackendService {
 		services:     make(map[string]*service.ServiceClient),
 	}
 
+	result.SetSettings(&service.Settings{
+		IsDisconnectOnError: false,
+	})
+
 	result.mc.On(ON_BACKEND_UPDATED, result, func(sp *ServicePack) {
 		if result.mc.IsSelfServicePack(sp) {
 			return
