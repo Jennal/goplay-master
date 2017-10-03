@@ -77,12 +77,6 @@ func (self *MasterClient) Bind(serv transfer.IServer, sp *ServicePack, host stri
 		}()
 	}
 
-	if serv.IsStarted() {
-		loopFunc()
-	} else {
-		serv.On(transfer.EVENT_SERVER_STARTED, self, loopFunc)
-	}
-
 	serv.On(transfer.EVENT_SERVER_NEW_CLIENT, self, func(sess transfer.IClient) {
 		sess.Once(transfer.EVENT_CLIENT_DISCONNECTED, self, func(cli transfer.IClient) {
 			self.dataMutex.Lock()
@@ -97,7 +91,7 @@ func (self *MasterClient) Bind(serv transfer.IServer, sp *ServicePack, host stri
 		self.isDataDirty = true
 	})
 
-	self.AddListener(ON_BACKEND_UPDATED, func(sp ServicePack) {
+	self.AddListener(ON_BACKEND_UPDATED, func(sp *ServicePack) {
 		log.Log(ON_BACKEND_UPDATED, ": ", sp)
 		self.Emit(ON_BACKEND_UPDATED, sp)
 	})
@@ -107,13 +101,28 @@ func (self *MasterClient) Bind(serv transfer.IServer, sp *ServicePack, host stri
 		return err
 	}
 
+	if serv.IsStarted() {
+		loopFunc()
+		if err := self.join(); err != nil {
+			return err
+		}
+	} else {
+		serv.On(transfer.EVENT_SERVER_STARTED, self, func() {
+			loopFunc()
+			self.join()
+		})
+	}
+
+	return nil
+}
+
+func (self *MasterClient) join() error {
 	ssp, em := self.Add(self.data)
 	if em != nil {
 		return log.NewError(em.Error())
 	}
 
 	self.data = ssp
-
 	return nil
 }
 
