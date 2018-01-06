@@ -175,7 +175,7 @@ func (self *BackendService) OnNewClient(client transfer.IClient) {
 		ch := channel.GetChannelManager().Get(name)
 		// log.Log("\t=>>>>> ", name, "\t", ch)
 		if ch != nil {
-			ch.BroadcastRaw(data)
+			ch.BroadcastRaw(name, data)
 		}
 	})
 
